@@ -12,17 +12,20 @@ from models.MVCNN import MVCNN, SVCNN
 from pdb import set_trace
 
 parser = argparse.ArgumentParser()
-parser.add_argument("-name", "--name", type=str, help="Name of the experiment", default="MVCNN")
-parser.add_argument("-bs", "--batchSize", type=int, help="Batch size for the second stage", default=8) # there will be *12 images in each batch for mvcnn
-parser.add_argument("-num_models", type=int, help="number of models per class", default=1000)
-parser.add_argument("-lr", type=float, help="learning rate", default=5e-5)
-parser.add_argument("-weight_decay", type=float, help="weight decay", default=0.0)
-parser.add_argument("-no_pretraining", dest='no_pretraining', action='store_true')
-parser.add_argument("-cnn_name", "--cnn_name", type=str, help="cnn model name", default="vgg11")
-parser.add_argument("-num_views", type=int, help="number of views", default=12)
-parser.add_argument("-train_path", type=str, default="modelnet40_images_new_12x/*/train")
-parser.add_argument("-val_path", type=str, default="modelnet40_images_new_12x/*/test")
+parser.add_argument('-name', '--name', type=str, help='Name of the experiment', default='MVCNN')
+parser.add_argument('-bs', '--batchSize', type=int, help='Batch size for the second stage', default=8) # there will be *12 images in each batch for mvcnn
+parser.add_argument('-num_models', type=int, help='number of models per class', default=1000)
+parser.add_argument('-lr', type=float, help='learning rate', default=5e-5)
+parser.add_argument('-weight_decay', type=float, help='weight decay', default=0.0)
+parser.add_argument('-no_pretraining', dest='no_pretraining', action='store_true')
+parser.add_argument('-cnn_name', '--cnn_name', type=str, help='cnn model name', default='vgg11')
+parser.add_argument('-num_views', type=int, help='number of views', default=12)
+parser.add_argument('-train_path', type=str, default='modelnet40_images_new_12x/*/train')
+parser.add_argument('-val_path', type=str, default='modelnet40_images_new_12x/*/test')
 parser.set_defaults(train=False)
+
+parser.add_argument('-prefix', type=str, default='./')
+#parser.add_argument('-prefix', type=str, default='/vulcan/scratch/yxren/mvcnn/')
 
 def create_folder(log_dir):
 	# make summary folder
@@ -44,8 +47,8 @@ if __name__ == '__main__':
 	config_f.close()
 
 	# STAGE 1
-	log_dir = args.name+'_stage_1'
-	create_folder(log_dir)
+	log_dir = args.name + '_stage_1'
+	create_folder(args.prefix + log_dir)
 	cnet = SVCNN(args.name, nclasses=40, pretraining=pretraining, cnn_name=args.cnn_name)
 
 	optimizer = optim.Adam(cnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
@@ -63,8 +66,8 @@ if __name__ == '__main__':
 #	trainer.train(1) # 30
 
 	# STAGE 2
-	log_dir = args.name+'_stage_2'
-	create_folder(log_dir)
+	log_dir = args.name + '_stage_2'
+	create_folder(args.prefix + log_dir)
 	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views)
 	del cnet
 
