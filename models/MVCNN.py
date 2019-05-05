@@ -98,17 +98,20 @@ class MVCNN(Model):
 #		set_trace()
 		
 		if cnn_name == 'alexnet':
-			inout = np.array([self.net_2._modules['1'].in_features, 512, 32, 1]) * self.num_views
-			'''
-			self.main = nn.Sequential(
-				nn.Linear(inout[0], inout[1]),
-				nn.ReLU(),
-				nn.Linear(inout[1], inout[2]),
-				nn.ReLU(),
-				nn.Linear(inout[2], inout[3]))
-			'''
-			self.main = nn.Sequential(
-				nn.Linear(inout[0], inout[3]))
+			inout = [self.net_2._modules['1'].in_features, 512, 32, 1]
+		elif cnn_name == 'vgg11':
+			inout = [self.net_2._modules['0'].in_features, 2048, 64, 1]
+		inout = np.array(inout) * self.num_views
+		'''
+		self.main = nn.Sequential(
+			nn.Linear(inout[0], inout[1]),
+			nn.ReLU(),
+			nn.Linear(inout[1], inout[2]),
+			nn.ReLU(),
+			nn.Linear(inout[2], inout[3]))
+		'''
+		self.main = nn.Sequential(
+			nn.Linear(inout[0], inout[3]))
 
 	def forward(self, x):
 		y = self.net_1(x) # (96, 256, 6, 6)
