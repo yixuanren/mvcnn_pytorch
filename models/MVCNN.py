@@ -102,18 +102,19 @@ class MVCNN(Model):
 		elif cnn_name == 'vgg11':
 			inout = [self.net_2._modules['0'].in_features, 2048, 64, 1]
 		inout = np.array(inout) * self.num_views
-		'''
+		
 		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[1]),
 			nn.ReLU(),
 			nn.Linear(inout[1], inout[2]),
 			nn.ReLU(),
-			nn.Linear(inout[2], inout[3]))
-#			nn.Softmax(dim=1)
+			nn.Linear(inout[2], inout[3]),
+			nn.Softmax(dim=1))
 		'''
 		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[3]))
 #			nn.Softmax(dim=1)
+		'''
 
 	def forward(self, x):
 		y = self.net_1(x) # (96, 256, 6, 6)
@@ -124,16 +125,16 @@ class MVCNN(Model):
 #		set_trace()
 		
 		ww = self.main_net(y.view(N2, -1)) # (8, 12)
-		ww = F.softmax(ww / 0.1, dim=1) # Temperature
+#		ww = F.softmax(ww / 0.1, dim=1) # Temperature
 #		set_trace()
 		
-		m, i = torch.max(ww, dim=1)
+#		m, i = torch.max(ww, dim=1)
 #		ww = torch.zeros_like(ww)
 #		ww[i] = 1
 		
 		wwy = torch.bmm(ww.unsqueeze(1), y.view(N2, self.num_views, -1)) # (8, 1, 9216) = (8, 1, 12) * (8, 12, 9216)
 		
-		return self.net_2(wwy.view(N2, -1)), 1 - m
+		return self.net_2(wwy.view(N2, -1)), ww
 		
 		'''
 		y = y.view((int(x.shape[0]/self.num_views), self.num_views, y.shape[-3], y.shape[-2], y.shape[-1])) # (8, 12, 512 ,7, 7)

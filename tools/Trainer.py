@@ -61,8 +61,9 @@ class ModelNetTrainer(object):
 				self.optimizer.zero_grad()
 
 #				set_trace()
-				out_data, m = self.model(in_data)
+				out_data, ww = self.model(in_data)
 
+				m, _ = torch.max(ww, dim=1)
 				loss = self.loss_fn(out_data, target) + 0 * torch.mean(m)
 				
 				self.writer.add_scalar('train/train_loss', loss, i_acc+i+1)

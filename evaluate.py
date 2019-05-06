@@ -32,37 +32,6 @@ parser.add_argument('-prefix', type=str, default='./')
 
 if __name__ == '__main__':
 	args = parser.parse_args()
-	
-	if args.cnn_name == 'alexnet':
-		net_1 = models.alexnet().features
-#		self.net_2 = models.alexnet().classifier
-	elif args.cnn_name == 'vgg11':
-		net_1 = models.vgg11().features
-#		self.net_2 = models.vgg11().classifier
-	
-	
-	if args.cnn_name == 'alexnet':
-		inout = [256 * 6 * 6, 512, 32, 1]
-	elif args.cnn_name == 'vgg11':
-		inout = [512 * 7 * 7, 2048, 64, 1]
-	inout = np.array(inout) * args.num_views
-	
-	main_net = nn.Sequential(
-		nn.Linear(inout[0], inout[1]),
-		nn.ReLU(),
-		nn.Linear(inout[1], inout[2]),
-		nn.ReLU(),
-		nn.Linear(inout[2], inout[3]),
-		nn.Softmax(dim=1))
-	'''
-	self.main = nn.Sequential(
-		nn.Linear(inout[0], inout[3]),
-		nn.Softmax(dim=1))
-	'''
-	
-	if torch.cuda.is_available():
-		net_1.cuda()
-		main_net.cuda()
 
 	
 	n_models_train = args.num_models * args.num_views
@@ -75,22 +44,27 @@ if __name__ == '__main__':
 	print('num_train_files: '+str(len(train_dataset.filepaths)))
 	print('num_val_files: '+str(len(val_dataset.filepaths)))
 	
+	cnet = SVCNN(args.name, nclasses=40, pretraining=False, cnn_name=args.cnn_name)
+	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views)
+	del cnet
 	
-	log_dir = args.prefix + args.name + '_stage_2/mvcnn/model-00000.pth'
+	if torch.cuda.is_available():
+		cnet_2.cuda()
+	
+	log_dir = args.prefix + args.name + '_stage_2/mvcnn/model-00008.pth'
 	model = torch.load(log_dir)
-	net_1.load_state_dict(model, strict=False)
-	net_1.eval()
-	main_net.load_state_dict(model, strict=False)
-	main_net.eval()
+	cnet_2.load_state_dict(model)
 	
 #	set_trace()
 	
 	for i, data in enumerate(train_loader):
 		N, V, C, H, W = data[1].size()
 		x = data[1].view(-1, C, H, W).cuda()
+		set_trace()
 		
 		y = net_1(x)
 		ww = main_net(y.view(N, -1))
+#		ww = F.softmax(ww / 0.1, dim=1)
 		
 		set_trace()
 
