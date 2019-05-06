@@ -108,12 +108,12 @@ class MVCNN(Model):
 			nn.ReLU(),
 			nn.Linear(inout[1], inout[2]),
 			nn.ReLU(),
-			nn.Linear(inout[2], inout[3])),
-			nn.Softmax(dim=1))
+			nn.Linear(inout[2], inout[3]))
+#			nn.Softmax(dim=1)
 		'''
 		self.main_net = nn.Sequential(
-			nn.Linear(inout[0], inout[3]),
-			nn.Softmax(dim=1))
+			nn.Linear(inout[0], inout[3]))
+#			nn.Softmax(dim=1)
 
 	def forward(self, x):
 		y = self.net_1(x) # (96, 256, 6, 6)
@@ -124,6 +124,7 @@ class MVCNN(Model):
 #		set_trace()
 		
 		ww = self.main_net(y.view(N2, -1)) # (8, 12)
+		ww = F.softmax(ww / 0.1, dim=1) # Temperature
 #		set_trace()
 		
 		m, i = torch.max(ww, dim=1)

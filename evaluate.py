@@ -76,7 +76,7 @@ if __name__ == '__main__':
 	print('num_val_files: '+str(len(val_dataset.filepaths)))
 	
 	
-	log_dir = args.prefix + args.name + '_stage_2/mvcnn/model-00004.pth'
+	log_dir = args.prefix + args.name + '_stage_2/mvcnn/model-00000.pth'
 	model = torch.load(log_dir)
 	net_1.load_state_dict(model, strict=False)
 	net_1.eval()
