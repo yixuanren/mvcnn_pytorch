@@ -68,7 +68,7 @@ class SVCNN(Model):
 		else:
 			y = self.net_1(x)
 #			set_trace()
-			return self.net_2(y.view(y.shape[0], -1))
+			return self.net_2(y.view(y.shape[0], -1)), torch.zeros(1).cuda()
 
 
 class MVCNN(Model):
@@ -103,15 +103,17 @@ class MVCNN(Model):
 			inout = [self.net_2._modules['0'].in_features, 2048, 64, 1]
 		inout = np.array(inout) * self.num_views
 		'''
-		self.main = nn.Sequential(
+		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[1]),
 			nn.ReLU(),
 			nn.Linear(inout[1], inout[2]),
 			nn.ReLU(),
-			nn.Linear(inout[2], inout[3]))
+			nn.Linear(inout[2], inout[3])),
+			nn.Softmax(dim=1))
 		'''
-		self.main = nn.Sequential(
-			nn.Linear(inout[0], inout[3]))
+		self.main_net = nn.Sequential(
+			nn.Linear(inout[0], inout[3]),
+			nn.Softmax(dim=1))
 
 	def forward(self, x):
 		y = self.net_1(x) # (96, 256, 6, 6)
@@ -121,12 +123,16 @@ class MVCNN(Model):
 #		y = y.permute(1, 0, 2, 3, 4).contiguous()
 #		set_trace()
 		
-		ww = F.softmax(self.main(y.view(N2, -1)), dim=1) # (8, 12)
+		ww = self.main_net(y.view(N2, -1)) # (8, 12)
 #		set_trace()
+		
+		m, i = torch.max(ww, dim=1)
+#		ww = torch.zeros_like(ww)
+#		ww[i] = 1
 		
 		wwy = torch.bmm(ww.unsqueeze(1), y.view(N2, self.num_views, -1)) # (8, 1, 9216) = (8, 1, 12) * (8, 12, 9216)
 		
-		return self.net_2(wwy.view(N2, -1))
+		return self.net_2(wwy.view(N2, -1)), 1 - m
 		
 		'''
 		y = y.view((int(x.shape[0]/self.num_views), self.num_views, y.shape[-3], y.shape[-2], y.shape[-1])) # (8, 12, 512 ,7, 7)

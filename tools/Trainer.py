@@ -52,17 +52,18 @@ class ModelNetTrainer(object):
 			for i, data in enumerate(self.train_loader):
 
 				if self.model_name == 'mvcnn':
-					N,V,C,H,W = data[1].size()
-					in_data = Variable(data[1]).view(-1,C,H,W).cuda()
+					N, V, C, H, W = data[1].size()
+					in_data = Variable(data[1]).view(-1, C, H, W).cuda()
 				else:
 					in_data = Variable(data[1].cuda())
 				target = Variable(data[0]).cuda().long()
 
 				self.optimizer.zero_grad()
 
-				out_data = self.model(in_data)
+#				set_trace()
+				out_data, m = self.model(in_data)
 
-				loss = self.loss_fn(out_data, target)
+				loss = self.loss_fn(out_data, target) + torch.mean(m)
 				
 				self.writer.add_scalar('train/train_loss', loss, i_acc+i+1)
 
@@ -133,7 +134,7 @@ class ModelNetTrainer(object):
 				in_data = Variable(data[1]).cuda()
 			target = Variable(data[0]).cuda()
 
-			out_data = self.model(in_data)
+			out_data, _ = self.model(in_data)
 			pred = torch.max(out_data, 1)[1]
 			all_loss += self.loss_fn(out_data, target).cpu().data.numpy()
 			results = pred == target
