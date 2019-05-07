@@ -68,12 +68,12 @@ class SVCNN(Model):
 		else:
 			y = self.net_1(x)
 #			set_trace()
-			return self.net_2(y.view(y.shape[0], -1)), torch.zeros(1).cuda()
+			return self.net_2(y.view(y.shape[0], -1)), torch.zeros(1, 1).cuda()
 
 
 class MVCNN(Model):
 
-	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12):
+	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None):
 		super(MVCNN, self).__init__(name)
 
 		self.classnames=['airplane','bathtub','bed','bench','bookshelf','bottle','bowl','car','chair',
@@ -84,6 +84,9 @@ class MVCNN(Model):
 
 		self.nclasses = nclasses
 		self.num_views = num_views
+		
+		self.constraint = constraint
+		
 		self.mean = Variable(torch.FloatTensor([0.485, 0.456, 0.406]), requires_grad=False).cuda()
 		self.std = Variable(torch.FloatTensor([0.229, 0.224, 0.225]), requires_grad=False).cuda()
 
@@ -102,19 +105,20 @@ class MVCNN(Model):
 		elif cnn_name == 'vgg11':
 			inout = [self.net_2._modules['0'].in_features, 2048, 64, 1]
 		inout = np.array(inout) * self.num_views
-		
+		'''
 		self.main_net = nn.Sequential(
-			nn.Linear(inout[0], inout[1]),
-			nn.ReLU(),
-			nn.Linear(inout[1], inout[2]),
-			nn.ReLU(),
-			nn.Linear(inout[2], inout[3]),
-			nn.Softmax(dim=1))
+				nn.Linear(inout[0], inout[1]),
+				nn.ReLU(),
+				nn.Linear(inout[1], inout[2]),
+				nn.ReLU(),
+				nn.Linear(inout[2], inout[3]))
 		'''
 		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[3]))
-#			nn.Softmax(dim=1)
-		'''
+		
+		if self.constraint == None or self.constraint == 'maxmax':
+			self.main_net.add_module(str(len(self.main_net)), nn.Softmax(dim=1))
+#		set_trace()
 
 	def forward(self, x):
 		y = self.net_1(x) # (96, 256, 6, 6)
@@ -125,7 +129,8 @@ class MVCNN(Model):
 #		set_trace()
 		
 		ww = self.main_net(y.view(N2, -1)) # (8, 12)
-#		ww = F.softmax(ww / 0.1, dim=1) # Temperature
+		if self.constraint == 'temperature':
+			ww = F.softmax(ww / 0.1, dim=1) # Temperature
 #		set_trace()
 		
 #		m, i = torch.max(ww, dim=1)

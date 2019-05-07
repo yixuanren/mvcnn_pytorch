@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import os,shutil,json
+import os, shutil, json
 import argparse
 
 from tools.Trainer import ModelNetTrainer
@@ -12,7 +12,7 @@ from models.MVCNN import MVCNN, SVCNN
 from pdb import set_trace
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-name', '--name', type=str, help='Name of the experiment', default='MVCNN')
+parser.add_argument('-name', '--name', type=str, help='Name of the experiment', default='mvcnn')
 parser.add_argument('-bs', '--batchSize', type=int, help='Batch size for the second stage', default=8) # there will be *12 images in each batch for mvcnn
 parser.add_argument('-num_models', type=int, help='number of models per class', default=1000)
 parser.add_argument('-lr', type=float, help='learning rate', default=5e-5)
@@ -23,6 +23,8 @@ parser.add_argument('-num_views', type=int, help='number of views', default=12)
 parser.add_argument('-train_path', type=str, default='modelnet40_images_new_12x/*/train')
 parser.add_argument('-val_path', type=str, default='modelnet40_images_new_12x/*/test')
 parser.set_defaults(train=False)
+
+parser.add_argument('-ct', '--constraint', type=str, default=None)
 
 parser.add_argument('-prefix', type=str, default='./')
 #parser.add_argument('-prefix', type=str, default='/vulcan/scratch/yxren/mvcnn/')
@@ -38,16 +40,30 @@ def create_folder(log_dir):
 
 if __name__ == '__main__':
 	args = parser.parse_args()
-
+	
+	
+	ckpt_dir = args.prefix + 'runs'
+	if not os.path.exists(ckpt_dir):
+		os.makedirs(ckpt_dir)
+#	set_trace()
+	runs = sorted(map(int, next(os.walk(ckpt_dir))[1]))
+	run_nr = 0 if len(runs) == 0 else runs[-1] + 1
+	run_folder = str(run_nr).zfill(2)
+	run_dir = os.path.join(ckpt_dir, run_folder)
+	if not os.path.exists(run_dir):
+		os.makedirs(run_dir)
+	
+	
 	pretraining = not args.no_pretraining
-	log_dir = args.name
-	create_folder(args.name)
+	log_dir = run_dir + '/' + args.name
+	create_folder(log_dir)
 	config_f = open(os.path.join(log_dir, 'config.json'), 'w')
 	json.dump(vars(args), config_f)
 	config_f.close()
-
+	
+	
 	# STAGE 1
-	log_dir = args.prefix + args.name + '_stage_1'
+	log_dir = run_dir + '/' + args.name + '_stage_1'
 	create_folder(log_dir)
 	cnet = SVCNN(args.name, nclasses=40, pretraining=pretraining, cnn_name=args.cnn_name)
 
@@ -63,12 +79,13 @@ if __name__ == '__main__':
 	print('num_train_files: '+str(len(train_dataset.filepaths)))
 	print('num_val_files: '+str(len(val_dataset.filepaths)))
 	trainer = ModelNetTrainer(cnet, train_loader, val_loader, optimizer, nn.CrossEntropyLoss(), 'svcnn', log_dir, num_views=1)
-	trainer.train(1) # 30
+#	trainer.train(30)
+
 
 	# STAGE 2
-	log_dir = args.prefix + args.name + '_stage_2'
+	log_dir = run_dir + '/' + args.name + '_stage_2'
 	create_folder(log_dir)
-	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views)
+	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint)
 	del cnet
 
 	optimizer = optim.Adam(cnet_2.parameters(), lr=args.lr, weight_decay=args.weight_decay, betas=(0.9, 0.999))
@@ -81,6 +98,6 @@ if __name__ == '__main__':
 	print('num_train_files: '+str(len(train_dataset.filepaths)))
 	print('num_val_files: '+str(len(val_dataset.filepaths)))
 	trainer = ModelNetTrainer(cnet_2, train_loader, val_loader, optimizer, nn.CrossEntropyLoss(), 'mvcnn', log_dir, num_views=args.num_views)
-	trainer.train(1) # 30
+	trainer.train(30)
 
 

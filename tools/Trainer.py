@@ -63,8 +63,11 @@ class ModelNetTrainer(object):
 #				set_trace()
 				out_data, ww = self.model(in_data)
 
-				m, _ = torch.max(ww, dim=1)
-				loss = self.loss_fn(out_data, target) + 0 * torch.mean(m)
+				loss = self.loss_fn(out_data, target)
+				
+				if self.model.constraint == 'maxmax':
+					m, _ = torch.max(ww, dim=1)
+					loss += torch.mean(m)
 				
 				self.writer.add_scalar('train/train_loss', loss, i_acc+i+1)
 
@@ -92,8 +95,14 @@ class ModelNetTrainer(object):
 				self.writer.add_scalar('val/val_loss', loss, epoch+1)
 
 			# save best model
+#			set_trace()
 			if val_overall_acc > best_acc:
 				best_acc = val_overall_acc
+				previous = next(os.walk(self.log_dir + '/' + self.model_name))[2]
+				if len(previous) > 3:
+					previous = [x[-9 : -4] for x in previous]
+					previous = sorted(map(int, previous))
+					os.remove(self.log_dir + '/' + self.model_name + '/model-' + str(previous[0]).zfill(5) + '.pth')
 				self.model.save(self.log_dir, epoch)
  
 			# adjust learning rate manually

@@ -2,7 +2,7 @@ import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn as nn
-import os,shutil,json
+import os, shutil, json
 import argparse
 
 import torchvision.models as models
@@ -27,6 +27,8 @@ parser.add_argument('-train_path', type=str, default='modelnet40_images_new_12x/
 parser.add_argument('-val_path', type=str, default='modelnet40_images_new_12x/*/test')
 parser.set_defaults(train=False)
 
+parser.add_argument('-ct', '--constraint', type=str, default=None)
+
 parser.add_argument('-prefix', type=str, default='./')
 #parser.add_argument('-prefix', type=str, default='/vulcan/scratch/yxren/mvcnn/')
 
@@ -45,7 +47,7 @@ if __name__ == '__main__':
 	print('num_val_files: '+str(len(val_dataset.filepaths)))
 	
 	cnet = SVCNN(args.name, nclasses=40, pretraining=False, cnn_name=args.cnn_name)
-	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views)
+	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint)
 	del cnet
 	
 	if torch.cuda.is_available():
@@ -62,9 +64,8 @@ if __name__ == '__main__':
 		x = data[1].view(-1, C, H, W).cuda()
 		set_trace()
 		
-		y = net_1(x)
-		ww = main_net(y.view(N, -1))
-#		ww = F.softmax(ww / 0.1, dim=1)
+		_, ww = cnet_2(x)
+		ww = F.softmax(ww / 0.1, dim=1)
 		
 		set_trace()
 
