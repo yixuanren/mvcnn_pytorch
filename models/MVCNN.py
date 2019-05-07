@@ -32,10 +32,14 @@ class SVCNN(Model):
 						 'person','piano','plant','radio','range_hood','sink','sofa','stairs',
 						 'stool','table','tent','toilet','tv_stand','vase','wardrobe','xbox']
 
+		self.name = name
 		self.nclasses = nclasses
 		self.pretraining = pretraining
 		self.cnn_name = cnn_name
 		self.use_resnet = cnn_name.startswith('resnet')
+		
+		self.constraint = ''
+		
 		self.mean = Variable(torch.FloatTensor([0.485, 0.456, 0.406]), requires_grad=False).cuda()
 		self.std = Variable(torch.FloatTensor([0.229, 0.224, 0.225]), requires_grad=False).cuda()
 
@@ -82,6 +86,7 @@ class MVCNN(Model):
 						 'person','piano','plant','radio','range_hood','sink','sofa','stairs',
 						 'stool','table','tent','toilet','tv_stand','vase','wardrobe','xbox']
 
+		self.name = name
 		self.nclasses = nclasses
 		self.num_views = num_views
 		
@@ -105,7 +110,7 @@ class MVCNN(Model):
 		elif cnn_name == 'vgg11':
 			inout = [self.net_2._modules['0'].in_features, 2048, 64, 1]
 		inout = np.array(inout) * self.num_views
-		'''
+		
 		self.main_net = nn.Sequential(
 				nn.Linear(inout[0], inout[1]),
 				nn.ReLU(),
@@ -115,7 +120,7 @@ class MVCNN(Model):
 		'''
 		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[3]))
-		
+		'''
 		if self.constraint == None or self.constraint == 'maxmax':
 			self.main_net.add_module(str(len(self.main_net)), nn.Softmax(dim=1))
 #		set_trace()

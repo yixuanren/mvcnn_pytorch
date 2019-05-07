@@ -50,10 +50,10 @@ if __name__ == '__main__':
 	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint)
 	del cnet
 	
-	if torch.cuda.is_available():
-		cnet_2.cuda()
+	cnet_2.cuda()
 	
-	log_dir = args.prefix + args.name + '_stage_2/mvcnn/model-00008.pth'
+#	log_dir = args.prefix + args.name + '_stage_2/mvcnn/model-00008.pth'
+	log_dir = 'model-00022.pth'
 	model = torch.load(log_dir)
 	cnet_2.load_state_dict(model)
 	
@@ -65,7 +65,8 @@ if __name__ == '__main__':
 		set_trace()
 		
 		_, ww = cnet_2(x)
-		ww = F.softmax(ww / 0.1, dim=1)
+		if args.constraint == 'temperature':
+			ww = F.softmax(ww / 0.1, dim=1)
 		
 		set_trace()
 
