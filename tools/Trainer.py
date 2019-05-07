@@ -67,7 +67,8 @@ class ModelNetTrainer(object):
 				
 				if self.model.constraint == 'maxmax':
 					m, _ = torch.max(ww, dim=1)
-					loss += torch.mean(m)
+#					set_trace()
+					loss += torch.mean(1 - m)
 				
 				self.writer.add_scalar('train/train_loss', loss, i_acc+i+1)
 
