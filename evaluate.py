@@ -12,6 +12,8 @@ from tools.Trainer import ModelNetTrainer
 from tools.ImgDataset import MultiviewImgDataset, SingleImgDataset
 from models.MVCNN import MVCNN, SVCNN
 
+from tqdm import tqdm
+
 from pdb import set_trace
 
 parser = argparse.ArgumentParser()
@@ -53,21 +55,29 @@ if __name__ == '__main__':
 	cnet_2.cuda()
 	
 #	log_dir = args.prefix + args.name + '_stage_2/mvcnn/model-00008.pth'
-	log_dir = 'model-00022.pth'
+	log_dir = 'model-00028.pth'
 	model = torch.load(log_dir)
 	cnet_2.load_state_dict(model)
-	
 #	set_trace()
 	
-	for i, data in enumerate(train_loader):
+	accumulation = np.zeros(args.num_views)
+	max_idx = np.zeros(args.num_views)
+	
+	for i, data in enumerate(tqdm(train_loader)):
 		N, V, C, H, W = data[1].size()
 		x = data[1].view(-1, C, H, W).cuda()
-		set_trace()
+#		set_trace()
 		
 		_, ww = cnet_2(x)
 		if args.constraint == 'temperature':
 			ww = F.softmax(ww / 0.1, dim=1)
+#		set_trace()
 		
-		set_trace()
+		ww = ww.cpu().detach().numpy()
+		ww = ww.reshape(args.num_views)
+		accumulation += ww
+		max_idx[ww.argmax()] += 1
+	
+	set_trace()
 
 

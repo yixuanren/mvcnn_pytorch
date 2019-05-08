@@ -113,9 +113,9 @@ class MVCNN(Model):
 		
 		self.main_net = nn.Sequential(
 				nn.Linear(inout[0], inout[1]),
-				nn.ReLU(),
+				nn.ReLU(inplace=True),
 				nn.Linear(inout[1], inout[2]),
-				nn.ReLU(),
+				nn.ReLU(inplace=True),
 				nn.Linear(inout[2], inout[3]))
 		'''
 		self.main_net = nn.Sequential(

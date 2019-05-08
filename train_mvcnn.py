@@ -88,7 +88,7 @@ if __name__ == '__main__':
 	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint)
 	del cnet
 
-	optimizer = optim.Adam(cnet_2.parameters(), lr=args.lr, weight_decay=args.weight_decay, betas=(0.9, 0.999))
+	optimizer = optim.Adam(cnet_2.parameters(), lr=args.lr/8*args.batchSize, weight_decay=args.weight_decay, betas=(0.9, 0.999))
 	
 	train_dataset = MultiviewImgDataset(args.train_path, scale_aug=False, rot_aug=False, num_models=n_models_train, num_views=args.num_views)
 	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batchSize, shuffle=False, num_workers=0) # shuffle needs to be false! it's done within the trainer
