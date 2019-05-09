@@ -68,9 +68,10 @@ if __name__ == '__main__':
 	
 	cnet.cuda()
 	log_dir = args.prefix + 'ckpt/svcnn/model-00025.pth'
-#	log_dir = ckpt_dir + '/20/mvcnn_stage_1/model-00025.pth'
+#	log_dir = ckpt_dir + '/20/mvcnn_stage_1/mvcnn/model-00025.pth'
 	model = torch.load(log_dir)
 	cnet.load_state_dict(model)
+	print('SVCNN trained model loaded!')
 
 	'''
 	log_dir = run_dir + '/' + args.name + '_stage_1'
