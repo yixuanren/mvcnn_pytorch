@@ -78,7 +78,7 @@ class SVCNN(Model):
 
 class MVCNN(Model):
 
-	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None, w_m=0):
+	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None, w_m=0, freeze=False):
 		super(MVCNN, self).__init__(name)
 
 		self.classnames=['airplane','bathtub','bed','bench','bookshelf','bottle','bowl','car','chair',
@@ -106,6 +106,12 @@ class MVCNN(Model):
 			self.net_1 = model.net_1
 			self.net_2 = model.net_2
 #		set_trace()
+		
+		if freeze:
+			for param in self.net_1.parameters():
+				param.requires_grad = False
+			for param in self.net_2.parameters():
+				param.requires_grad = False
 		
 		if cnn_name == 'alexnet':
 			inout = [self.net_2._modules['1'].in_features, 512, 32, 1]

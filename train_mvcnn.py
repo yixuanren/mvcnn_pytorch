@@ -28,6 +28,7 @@ parser.add_argument('-ct', '--constraint', type=str, default=None)
 parser.add_argument('-w_m', type=float, default=1e-1)
 
 parser.add_argument('-stm', '--svcnn_training_mode', type=str, default=None)
+parser.add_argument('-f', '--freeze', type=bool, default=False)
 
 parser.add_argument('-prefix', type=str, default='./')
 #parser.add_argument('-prefix', type=str, default='/vulcan/scratch/yxren/mvcnn/')
@@ -69,7 +70,7 @@ if __name__ == '__main__':
 	# STAGE 1
 	cnet = SVCNN(args.name, nclasses=40, pretraining=pretraining, cnn_name=args.cnn_name)
 
-	if args.svcnn_training_mode == 'train'
+	if args.svcnn_training_mode == 'train':
 		log_dir = run_dir + '/' + args.name + '_stage_1'
 		create_folder(log_dir)
 		
@@ -96,7 +97,7 @@ if __name__ == '__main__':
 	# STAGE 2
 	log_dir = run_dir + '/' + args.name + '_stage_2'
 	create_folder(log_dir)
-	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint, w_m=args.w_m)
+	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint, w_m=args.w_m, freeze=args.freeze)
 	del cnet
 
 	optimizer = optim.Adam(cnet_2.parameters(), lr=args.lr/8*args.batchSize, weight_decay=args.weight_decay, betas=(0.9, 0.999))
