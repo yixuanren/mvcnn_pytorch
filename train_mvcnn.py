@@ -63,10 +63,18 @@ if __name__ == '__main__':
 	
 	
 	# STAGE 1
+	cnet = SVCNN(args.name, nclasses=40, pretraining=pretraining, cnn_name=args.cnn_name)
+	
+	cnet.cuda()
+	log_dir = args.prefix + 'ckpt/svcnn/model-00025.pth'
+#	log_dir = ckpt_dir + '/20/mvcnn_stage_1/model-00025.pth'
+	model = torch.load(log_dir)
+	cnet.load_state_dict(model)
+
+	'''
 	log_dir = run_dir + '/' + args.name + '_stage_1'
 	create_folder(log_dir)
-	cnet = SVCNN(args.name, nclasses=40, pretraining=pretraining, cnn_name=args.cnn_name)
-
+	
 	optimizer = optim.Adam(cnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 	
 	n_models_train = args.num_models * args.num_views
@@ -80,6 +88,7 @@ if __name__ == '__main__':
 	print('num_val_files: '+str(len(val_dataset.filepaths)))
 	trainer = ModelNetTrainer(cnet, train_loader, val_loader, optimizer, nn.CrossEntropyLoss(), 'svcnn', log_dir, num_views=1)
 	trainer.train(30)
+	'''
 
 
 	# STAGE 2

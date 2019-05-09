@@ -12,6 +12,7 @@ from tools.Trainer import ModelNetTrainer
 from tools.ImgDataset import MultiviewImgDataset, SingleImgDataset
 from models.MVCNN import MVCNN, SVCNN
 
+import torchvision
 from tqdm import tqdm
 
 from pdb import set_trace
@@ -36,47 +37,94 @@ parser.add_argument('-prefix', type=str, default='./')
 
 if __name__ == '__main__':
 	args = parser.parse_args()
-
+	
+	selected_dir = './selected/'
 	
 	n_models_train = args.num_models * args.num_views
 	
 	train_dataset = MultiviewImgDataset(args.train_path, scale_aug=False, rot_aug=False, num_models=n_models_train, num_views=args.num_views)
 	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=args.batchSize, shuffle=False, num_workers=0) # shuffle needs to be false! it's done within the trainer
-
+	
 	val_dataset = MultiviewImgDataset(args.val_path, scale_aug=False, rot_aug=False, num_views=args.num_views)
 	val_loader = torch.utils.data.DataLoader(val_dataset, batch_size=args.batchSize, shuffle=False, num_workers=0)
 	print('num_train_files: '+str(len(train_dataset.filepaths)))
 	print('num_val_files: '+str(len(val_dataset.filepaths)))
-	
+
+
+	# STAGE 1
 	cnet = SVCNN(args.name, nclasses=40, pretraining=False, cnn_name=args.cnn_name)
+	
+	cnet.cuda()
+	
+	log_dir = args.prefix + 'ckpt/svcnn/model-00023.pth'
+	model = torch.load(log_dir)
+	cnet.load_state_dict(model)
+#	set_trace()
+	
+	all_loss = np.zeros(args.num_views)
+	all_conf = np.zeros(args.num_views)
+	
+	for i, data in enumerate(tqdm(train_loader)):
+		x = data[1]
+		N, V, C, H, W = x.size()
+		x = x.view(-1, C, H, W).cuda()
+#		set_trace()
+		
+		y, _ = cnet(x)
+		target = torch.repeat_interleave(data[0], V).cuda()
+		
+		loss_fn = nn.CrossEntropyLoss(reduction='none')
+		loss = loss_fn(y, target).view(N, V)
+		
+		pred = F.softmax(y, dim=1)
+		conf = pred[range(N * V), target].view(N, V)
+		
+		all_loss += loss.sum(dim=0).cpu().detach().numpy()
+		all_conf += conf.sum(dim=0).cpu().detach().numpy()
+#		set_trace()
+	set_trace()
+	
+	
+	
+	# STAGE 2
 	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint)
 	del cnet
 	
 	cnet_2.cuda()
 	
-#	log_dir = args.prefix + args.name + '_stage_2/mvcnn/model-00008.pth'
-	log_dir = 'model-00028.pth'
+#	log_dir = args.prefix + 'runs/24/' + args.name + '_stage_2/mvcnn/model-00005.pth'
+#	log_dir = args.prefix + 'ckpt/mvcnn/model-00024.pth'
+	log_dir = args.prefix + 'model-00025.pth'
 	model = torch.load(log_dir)
 	cnet_2.load_state_dict(model)
 #	set_trace()
 	
-	accumulation = np.zeros(args.num_views)
-	max_idx = np.zeros(args.num_views)
+	all_ww = np.zeros(args.num_views)
+	top1_idx = np.zeros(args.num_views)
 	
 	for i, data in enumerate(tqdm(train_loader)):
-		N, V, C, H, W = data[1].size()
-		x = data[1].view(-1, C, H, W).cuda()
+		x = data[1]
+		N, V, C, H, W = x.size()
+		x = x.view(-1, C, H, W).cuda()
 #		set_trace()
 		
 		_, ww = cnet_2(x)
 		if args.constraint == 'temperature':
-			ww = F.softmax(ww / 0.1, dim=1)
+			ww = F.softmax(ww / 0.9, dim=1)
 #		set_trace()
 		
-		ww = ww.cpu().detach().numpy()
-		ww = ww.reshape(args.num_views)
-		accumulation += ww
-		max_idx[ww.argmax()] += 1
+		_, idx = torch.max(ww, dim=1)
+#		set_trace()
+		
+		'''
+		x = x.view(N, V, C, H, W)
+		for j in range(N):
+#			set_trace()
+			torchvision.utils.save_image(x[j, idx[j], :, :, :], selected_dir + str(N * i + j).zfill(4) + '.png')
+		'''
+		
+		all_ww += ww.sum(dim=0).cpu().detach().numpy()
+#		top1_idx[idx] += 1
 	
 	set_trace()
 

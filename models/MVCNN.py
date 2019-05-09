@@ -121,7 +121,7 @@ class MVCNN(Model):
 		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[3]))
 		'''
-		if self.constraint == None or self.constraint == 'maxmax':
+		if self.constraint == None or self.constraint == 'maxmax' or self.constraint == 'argmax':
 			self.main_net.add_module(str(len(self.main_net)), nn.Softmax(dim=1))
 #		set_trace()
 
@@ -134,13 +134,17 @@ class MVCNN(Model):
 #		set_trace()
 		
 		ww = self.main_net(y.view(N2, -1)) # (8, 12)
+		
 		if self.constraint == 'temperature':
-			ww = F.softmax(ww / 0.1, dim=1) # Temperature
+			ww = F.softmax(ww / 0.5, dim=1) # Temperature
 #		set_trace()
 		
-#		m, i = torch.max(ww, dim=1)
-#		ww = torch.zeros_like(ww)
-#		ww[i] = 1
+		if self.constraint == 'argmax':
+			# NOT DIFFERENTIABLE!
+			m, i = torch.max(ww, dim=1)
+			ww = torch.zeros_like(ww)
+			ww[range(N2), i] = 1
+#		set_trace()
 		
 		wwy = torch.bmm(ww.unsqueeze(1), y.view(N2, self.num_views, -1)) # (8, 1, 9216) = (8, 1, 12) * (8, 12, 9216)
 		
