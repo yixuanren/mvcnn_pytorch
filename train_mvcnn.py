@@ -45,6 +45,10 @@ def create_folder(log_dir):
 if __name__ == '__main__':
 	args = parser.parse_args()
 	
+	if args.svcnn_training_mode == None and args.freeze:
+		print('Invalid args!')
+		exit()
+	
 	
 	ckpt_dir = args.prefix + 'runs'
 	if not os.path.exists(ckpt_dir):

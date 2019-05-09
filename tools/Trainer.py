@@ -8,6 +8,8 @@ import os
 from tensorboardX import SummaryWriter
 import time
 
+np.set_printoptions(suppress=True)
+
 from pdb import set_trace
 
 class ModelNetTrainer(object):
@@ -67,8 +69,9 @@ class ModelNetTrainer(object):
 				
 				if self.model.constraint == 'maxmax':
 					m, idx = torch.max(ww, dim=1)
-					print(str(torch.mean(m).cpu().detach().numpy()))
+					print(str(m.mean().cpu().detach().numpy()))
 					print(str(idx.cpu().detach().numpy()))
+					print(str(ww.mean(dim=0).cpu().detach().numpy()))
 #					set_trace()
 					loss += self.model.w_m * torch.mean(1 - m)
 				
@@ -119,6 +122,8 @@ class ModelNetTrainer(object):
 		# export scalar data to JSON for external processing
 		self.writer.export_scalars_to_json(self.log_dir+"/all_scalars.json")
 		self.writer.close()
+		
+		print('Best accuracy: ' + str(best_acc))
 
 	def update_validation_accuracy(self, epoch):
 		all_correct_points = 0

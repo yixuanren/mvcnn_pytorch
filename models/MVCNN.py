@@ -38,7 +38,7 @@ class SVCNN(Model):
 		self.cnn_name = cnn_name
 		self.use_resnet = cnn_name.startswith('resnet')
 		
-		self.constraint = ''
+		self.constraint = None
 		self.w_m = 0
 		
 		self.mean = Variable(torch.FloatTensor([0.485, 0.456, 0.406]), requires_grad=False).cuda()
@@ -112,6 +112,7 @@ class MVCNN(Model):
 				param.requires_grad = False
 			for param in self.net_2.parameters():
 				param.requires_grad = False
+			print('Original nets freezed!')
 		
 		if cnn_name == 'alexnet':
 			inout = [self.net_2._modules['1'].in_features, 512, 32, 1]
@@ -129,12 +130,21 @@ class MVCNN(Model):
 		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[3]))
 		'''
-		if self.constraint == None or self.constraint == 'maxmax' or self.constraint == 'argmax':
+		if self.constraint == '' or self.constraint == 'maxmax' or self.constraint == 'argmax':
 			self.main_net.add_module(str(len(self.main_net)), nn.Softmax(dim=1))
 #		set_trace()
 
 	def forward(self, x):
 		y = self.net_1(x) # (96, 256, 6, 6)
+		
+		
+		if self.constraint == None: # original version
+			y = y.view((int(x.shape[0]/self.num_views), self.num_views, y.shape[-3], y.shape[-2], y.shape[-1])) # (8, 12, 512 ,7, 7)
+			
+			return self.net_2(torch.max(y, 1)[0].view(y.shape[0], -1))
+		
+		
+		
 		N1, C, H, W = y.size()
 		N2 = int(N1 / self.num_views)
 		y = y.view((N2, self.num_views, C, H, W)) # (8, 12, 256, 6, 6)
@@ -157,10 +167,4 @@ class MVCNN(Model):
 		wwy = torch.bmm(ww.unsqueeze(1), y.view(N2, self.num_views, -1)) # (8, 1, 9216) = (8, 1, 12) * (8, 12, 9216)
 		
 		return self.net_2(wwy.view(N2, -1)), ww
-		
-		'''
-		y = y.view((int(x.shape[0]/self.num_views), self.num_views, y.shape[-3], y.shape[-2], y.shape[-1])) # (8, 12, 512 ,7, 7)
-		
-		return self.net_2(torch.max(y, 1)[0].view(y.shape[0], -1))
-		'''
 
