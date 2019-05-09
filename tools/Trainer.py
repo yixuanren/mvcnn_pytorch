@@ -66,9 +66,11 @@ class ModelNetTrainer(object):
 				loss = self.loss_fn(out_data, target)
 				
 				if self.model.constraint == 'maxmax':
-					m, _ = torch.max(ww, dim=1)
+					m, idx = torch.max(ww, dim=1)
+					print(str(torch.mean(m).cpu().detach().numpy()))
+					print(str(idx.cpu().detach().numpy()))
 #					set_trace()
-					loss += 1e-2 * torch.mean(1 - m)
+					loss += self.model.w_m * torch.mean(1 - m)
 				
 				self.writer.add_scalar('train/train_loss', loss, i_acc+i+1)
 

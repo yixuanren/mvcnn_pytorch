@@ -39,6 +39,7 @@ class SVCNN(Model):
 		self.use_resnet = cnn_name.startswith('resnet')
 		
 		self.constraint = ''
+		self.w_m = 0
 		
 		self.mean = Variable(torch.FloatTensor([0.485, 0.456, 0.406]), requires_grad=False).cuda()
 		self.std = Variable(torch.FloatTensor([0.229, 0.224, 0.225]), requires_grad=False).cuda()
@@ -77,7 +78,7 @@ class SVCNN(Model):
 
 class MVCNN(Model):
 
-	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None):
+	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None, w_m=0):
 		super(MVCNN, self).__init__(name)
 
 		self.classnames=['airplane','bathtub','bed','bench','bookshelf','bottle','bowl','car','chair',
@@ -91,6 +92,7 @@ class MVCNN(Model):
 		self.num_views = num_views
 		
 		self.constraint = constraint
+		self.w_m = w_m
 		
 		self.mean = Variable(torch.FloatTensor([0.485, 0.456, 0.406]), requires_grad=False).cuda()
 		self.std = Variable(torch.FloatTensor([0.229, 0.224, 0.225]), requires_grad=False).cuda()
