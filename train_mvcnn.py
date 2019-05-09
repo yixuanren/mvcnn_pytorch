@@ -61,6 +61,7 @@ if __name__ == '__main__':
 	json.dump(vars(args), config_f)
 	config_f.close()
 	
+	n_models_train = args.num_models * args.num_views
 	
 	# STAGE 1
 	cnet = SVCNN(args.name, nclasses=40, pretraining=pretraining, cnn_name=args.cnn_name)
@@ -76,8 +77,6 @@ if __name__ == '__main__':
 	create_folder(log_dir)
 	
 	optimizer = optim.Adam(cnet.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-	
-	n_models_train = args.num_models * args.num_views
 
 	train_dataset = SingleImgDataset(args.train_path, scale_aug=False, rot_aug=False, num_models=n_models_train, num_views=args.num_views)
 	train_loader = torch.utils.data.DataLoader(train_dataset, batch_size=64, shuffle=True, num_workers=0)
