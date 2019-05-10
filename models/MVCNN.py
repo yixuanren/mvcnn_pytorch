@@ -107,19 +107,16 @@ class MVCNN(Model):
 			self.net_2 = model.net_2
 #		set_trace()
 		
-		if freeze:
-			for param in self.net_1.parameters():
-				param.requires_grad = False
-			for param in self.net_2.parameters():
-				param.requires_grad = False
-			print('Original nets freezed!')
 		
+		self.pre_net = nn.Sequential(
+				nn.MaxPool2d(6))
 		if cnn_name == 'alexnet':
-			inout = [self.net_2._modules['1'].in_features, 512, 32, 1]
+#			inout = [self.net_2._modules['1'].in_features, 512, 32, 1]
+			inout = [256, 32, 1]
 		elif cnn_name == 'vgg11':
 			inout = [self.net_2._modules['0'].in_features, 2048, 64, 1]
 		inout = np.array(inout) * self.num_views
-		
+		'''
 		self.main_net = nn.Sequential(
 				nn.Linear(inout[0], inout[1]),
 				nn.ReLU(inplace=True),
@@ -128,9 +125,14 @@ class MVCNN(Model):
 				nn.Linear(inout[2], inout[3]))
 		'''
 		self.main_net = nn.Sequential(
+				nn.Linear(inout[0], inout[1]),
+				nn.ReLU(inplace=True),
+				nn.Linear(inout[1], inout[2]))
+		'''
+		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[3]))
 		'''
-		if self.constraint == '' or self.constraint == 'maxmax' or self.constraint == 'argmax':
+		if self.constraint == 'no' or self.constraint == 'maxmax' or self.constraint == 'argmax':
 			self.main_net.add_module(str(len(self.main_net)), nn.Softmax(dim=1))
 #		set_trace()
 
@@ -141,7 +143,7 @@ class MVCNN(Model):
 		if self.constraint == None: # original version
 			y = y.view((int(x.shape[0]/self.num_views), self.num_views, y.shape[-3], y.shape[-2], y.shape[-1])) # (8, 12, 512 ,7, 7)
 			
-			return self.net_2(torch.max(y, 1)[0].view(y.shape[0], -1))
+			return self.net_2(torch.max(y, 1)[0].view(y.shape[0], -1)), torch.zeros(1, 1).cuda()
 		
 		
 		
@@ -151,7 +153,9 @@ class MVCNN(Model):
 #		y = y.permute(1, 0, 2, 3, 4).contiguous()
 #		set_trace()
 		
-		ww = self.main_net(y.view(N2, -1)) # (8, 12)
+		y = self.pre_net(y.view(-1, C, H, W)) # (96, 256, 1, 1) <- (96, 256, 6, 6)
+#		ww = self.main_net(y.view(N2, -1)) # (8, 12) <- (8, 9216*12)
+		ww = self.main_net(y.view(N2, -1)) # (8, 12) <- (8, 256*12)
 		
 		if self.constraint == 'temperature':
 			ww = F.softmax(ww / 0.5, dim=1) # Temperature
