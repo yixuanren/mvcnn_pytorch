@@ -78,7 +78,7 @@ class SVCNN(Model):
 
 class MVCNN(Model):
 
-	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None, w_m=0, freeze=False):
+	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None, w_m=0):
 		super(MVCNN, self).__init__(name)
 
 		self.classnames=['airplane','bathtub','bed','bench','bookshelf','bottle','bowl','car','chair',
@@ -109,25 +109,21 @@ class MVCNN(Model):
 		
 		
 		self.pre_net = nn.Sequential(
-				nn.MaxPool2d(6))
+				nn.MaxPool2d(3))
+		
 		if cnn_name == 'alexnet':
 #			inout = [self.net_2._modules['1'].in_features, 512, 32, 1]
-			inout = [256, 32, 1]
+			inout = [1024, 128, 16, 1]
 		elif cnn_name == 'vgg11':
 			inout = [self.net_2._modules['0'].in_features, 2048, 64, 1]
 		inout = np.array(inout) * self.num_views
-		'''
+		
 		self.main_net = nn.Sequential(
 				nn.Linear(inout[0], inout[1]),
 				nn.ReLU(inplace=True),
 				nn.Linear(inout[1], inout[2]),
 				nn.ReLU(inplace=True),
 				nn.Linear(inout[2], inout[3]))
-		'''
-		self.main_net = nn.Sequential(
-				nn.Linear(inout[0], inout[1]),
-				nn.ReLU(inplace=True),
-				nn.Linear(inout[1], inout[2]))
 		'''
 		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[3]))
@@ -153,9 +149,9 @@ class MVCNN(Model):
 #		y = y.permute(1, 0, 2, 3, 4).contiguous()
 #		set_trace()
 		
-		y = self.pre_net(y.view(-1, C, H, W)) # (96, 256, 1, 1) <- (96, 256, 6, 6)
-#		ww = self.main_net(y.view(N2, -1)) # (8, 12) <- (8, 9216*12)
-		ww = self.main_net(y.view(N2, -1)) # (8, 12) <- (8, 256*12)
+		z = self.pre_net(y.view(-1, C, H, W)) # (96, 256, 2, 2) <- (96, 256, 6, 6)
+#		ww = self.main_net(y.view(N2, -1)) # (8, 12) <- (8, 256*6*6*12)
+		ww = self.main_net(z.view(N2, -1)) # (8, 12) <- (8, 256*2*2*12)
 		
 		if self.constraint == 'temperature':
 			ww = F.softmax(ww / 0.5, dim=1) # Temperature

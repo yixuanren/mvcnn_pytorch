@@ -101,10 +101,10 @@ if __name__ == '__main__':
 	# STAGE 2
 	log_dir = run_dir + '/' + args.name + '_stage_2'
 	create_folder(log_dir)
-	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint, w_m=args.w_m, freeze=args.freeze)
+	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint, w_m=args.w_m)
 	del cnet
 
-	params = cnet_2.main_net.parameters() if freeze else cnet_2.parameters()
+	params = cnet_2.main_net.parameters() if args.freeze else cnet_2.parameters()
 	optimizer = optim.Adam(params, lr=args.lr/8*args.batchSize, weight_decay=args.weight_decay, betas=(0.9, 0.999))
 	
 	train_dataset = MultiviewImgDataset(args.train_path, scale_aug=False, rot_aug=False, num_models=n_models_train, num_views=args.num_views)
