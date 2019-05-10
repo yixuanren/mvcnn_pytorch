@@ -26,6 +26,9 @@ parser.set_defaults(train=False)
 
 parser.add_argument('-ct', '--constraint', type=str, default=None)
 parser.add_argument('-w_m', type=float, default=1e-1)
+parser.add_argument('-T', type=float, default=1)
+
+parser.add_argument('-pt', '--preType', type=str, default=None)
 
 parser.add_argument('-stm', '--svcnn_training_mode', type=str, default=None)
 parser.add_argument('-f', '--freeze', type=bool, default=False)
@@ -101,7 +104,7 @@ if __name__ == '__main__':
 	# STAGE 2
 	log_dir = run_dir + '/' + args.name + '_stage_2'
 	create_folder(log_dir)
-	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint, w_m=args.w_m)
+	cnet_2 = MVCNN(args.name, cnet, nclasses=40, cnn_name=args.cnn_name, num_views=args.num_views, constraint=args.constraint, w_m=args.w_m, T=args.T, preType=args.preType)
 	del cnet
 
 	params = cnet_2.main_net.parameters() if args.freeze else cnet_2.parameters()

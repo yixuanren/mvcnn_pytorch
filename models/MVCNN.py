@@ -78,7 +78,7 @@ class SVCNN(Model):
 
 class MVCNN(Model):
 
-	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None, w_m=0):
+	def __init__(self, name, model, nclasses=40, cnn_name='vgg11', num_views=12, constraint=None, w_m=0, T=1, preType=None):
 		super(MVCNN, self).__init__(name)
 
 		self.classnames=['airplane','bathtub','bed','bench','bookshelf','bottle','bowl','car','chair',
@@ -93,6 +93,7 @@ class MVCNN(Model):
 		
 		self.constraint = constraint
 		self.w_m = w_m
+		self.T = T
 		
 		self.mean = Variable(torch.FloatTensor([0.485, 0.456, 0.406]), requires_grad=False).cuda()
 		self.std = Variable(torch.FloatTensor([0.229, 0.224, 0.225]), requires_grad=False).cuda()
@@ -108,12 +109,15 @@ class MVCNN(Model):
 #		set_trace()
 		
 		
-		self.pre_net = nn.Sequential(
-				nn.MaxPool2d(3))
+		if preType == 'maxpool':
+			self.pre_net = nn.Sequential(
+					nn.MaxPool2d(3))
 		
 		if cnn_name == 'alexnet':
-#			inout = [self.net_2._modules['1'].in_features, 512, 32, 1]
-			inout = [1024, 128, 16, 1]
+			if preType == 'maxpool':
+				inout = [1024, 128, 16, 1]
+			else:
+				inout = [self.net_2._modules['1'].in_features, 512, 32, 1]
 		elif cnn_name == 'vgg11':
 			inout = [self.net_2._modules['0'].in_features, 2048, 64, 1]
 		inout = np.array(inout) * self.num_views
@@ -154,7 +158,7 @@ class MVCNN(Model):
 		ww = self.main_net(z.view(N2, -1)) # (8, 12) <- (8, 256*2*2*12)
 		
 		if self.constraint == 'temperature':
-			ww = F.softmax(ww / 0.5, dim=1) # Temperature
+			ww = F.softmax(ww / self.T, dim=1) # Temperature
 #		set_trace()
 		
 		if self.constraint == 'argmax':
