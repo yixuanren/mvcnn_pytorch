@@ -34,6 +34,7 @@ class ModelNetTrainer(object):
 	def train(self, n_epochs):
 
 		best_acc = 0
+		best_epo = 0
 		i_acc = 0
 		self.model.train()
 		for epoch in range(n_epochs):
@@ -106,13 +107,14 @@ class ModelNetTrainer(object):
 			if val_overall_acc > best_acc:
 				print('New record. Save this model.')
 				best_acc = val_overall_acc
-				
+				best_epo = epoch
+				'''
 				if epoch > 2:
 					previous = next(os.walk(self.log_dir + '/' + self.model.name))[2]
 					previous = [x[-9 : -4] for x in previous]
 					previous = sorted(map(int, previous))
 					os.remove(self.log_dir + '/' + self.model.name + '/model-' + str(previous[0]).zfill(5) + '.pth')
-				
+				'''
 				self.model.save(self.log_dir, epoch)
  
 			# adjust learning rate manually
@@ -125,6 +127,7 @@ class ModelNetTrainer(object):
 		self.writer.close()
 		
 		print('Best accuracy: ' + str(best_acc))
+		print('Best epoch: ' + str(best_epo + 1))
 
 	def update_validation_accuracy(self, epoch):
 		all_correct_points = 0

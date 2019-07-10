@@ -95,6 +95,8 @@ class MVCNN(Model):
 		self.w_m = w_m
 		self.T = T
 		
+		self.preType = preType
+		
 		self.mean = Variable(torch.FloatTensor([0.485, 0.456, 0.406]), requires_grad=False).cuda()
 		self.std = Variable(torch.FloatTensor([0.229, 0.224, 0.225]), requires_grad=False).cuda()
 
@@ -109,13 +111,15 @@ class MVCNN(Model):
 #		set_trace()
 		
 		
-		if preType == 'maxpool':
+		if self.preType == 'maxpool':
 			self.pre_net = nn.Sequential(
 					nn.MaxPool2d(3))
+#					nn.MaxPool2d(6))
 		
 		if cnn_name == 'alexnet':
 			if preType == 'maxpool':
 				inout = [1024, 128, 16, 1]
+#				inout = [256, 16, 1]
 			else:
 				inout = [self.net_2._modules['1'].in_features, 512, 32, 1]
 		elif cnn_name == 'vgg11':
@@ -129,6 +133,11 @@ class MVCNN(Model):
 				nn.ReLU(inplace=True),
 				nn.Linear(inout[2], inout[3]))
 		'''
+		self.main_net = nn.Sequential(
+				nn.Linear(inout[0], inout[1]),
+				nn.ReLU(inplace=True),
+				nn.Linear(inout[1], inout[2]))
+		
 		self.main_net = nn.Sequential(
 			nn.Linear(inout[0], inout[3]))
 		'''
@@ -153,9 +162,11 @@ class MVCNN(Model):
 #		y = y.permute(1, 0, 2, 3, 4).contiguous()
 #		set_trace()
 		
-		z = self.pre_net(y.view(-1, C, H, W)) # (96, 256, 2, 2) <- (96, 256, 6, 6)
-#		ww = self.main_net(y.view(N2, -1)) # (8, 12) <- (8, 256*6*6*12)
-		ww = self.main_net(z.view(N2, -1)) # (8, 12) <- (8, 256*2*2*12)
+		if self.preType == 'maxpool':
+			z = self.pre_net(y.view(-1, C, H, W)) # (96, 256, 2, 2) <- (96, 256, 6, 6)
+			ww = self.main_net(z.view(N2, -1)) # (8, 12) <- (8, 12*256*2*2)
+		else:
+			ww = self.main_net(y.view(N2, -1)) # (8, 12) <- (8, 12*256*6*6)
 		
 		if self.constraint == 'temperature':
 			ww = F.softmax(ww / self.T, dim=1) # Temperature
